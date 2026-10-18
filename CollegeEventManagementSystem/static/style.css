@@ -1,0 +1,119 @@
+:root {
+  --primary-color: #1268e8;
+  --primary-dark: #0b2545;
+  --primary-light: #eef5ff;
+  --accent-color: #f59e0b;
+  --bg-color: #f6f9fc;
+  --card-bg: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Navbar */
+.topbar {
+  background: linear-gradient(110deg, #0b2545 0%, #10416c 60%, #155e96 100%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.topbar .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  transition: color 0.15s ease-in-out;
+}
+
+.topbar .nav-link:hover,
+.topbar .nav-link.active {
+  color: #ffffff;
+}
+
+/* Hero Section */
+.hero {
+  background: linear-gradient(135deg, #0b2545 0%, #144f80 50%, #1971b3 100%);
+  color: white;
+  border-radius: 24px;
+}
+
+.tracking-tight {
+  letter-spacing: -0.025em;
+}
+
+/* Event Cards */
+.event-card {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
+}
+
+.event-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 32px rgba(11, 37, 69, 0.08) !important;
+}
+
+.poster {
+  height: 180px;
+  object-fit: cover;
+  width: 100%;
+}
+
+/* Member Form Dynamic Card */
+.member-card {
+  border-left: 4px solid var(--primary-color) !important;
+  transition: background-color 0.2s ease;
+}
+
+.member-card:hover {
+  background-color: #f8fafc;
+}
+
+/* Ticket Styles */
+.ticket-card {
+  border-radius: 20px;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .border-end-md {
+    border-right: 2px dashed #cbd5e1;
+  }
+}
+
+.font-monospace {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
+.tracking-wide {
+  letter-spacing: 0.1em;
+}
+
+/* Print Rules */
+@media print {
+  nav, footer, .no-print, .btn, .alert {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    padding: 0 !important;
+  }
+  .container {
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+  .ticket-card {
+    box-shadow: none !important;
+    border: 2px solid #000 !important;
+    page-break-inside: avoid;
+  }
+}

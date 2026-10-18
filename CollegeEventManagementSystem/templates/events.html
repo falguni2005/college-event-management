@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Browse Events{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold text-dark mb-1">Explore College Events</h1>
+    <p class="text-secondary mb-0">
+      Any department can arrange events &mdash; <strong>all students from any department can register!</strong>
+    </p>
+  </div>
+  <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 fs-6 rounded-pill">
+    {{ events|length }} Active Events
+  </span>
+</div>
+
+<!-- Filter Bar -->
+<div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+  <form class="row g-2 align-items-center" method="GET" action="{{ url_for('browse_events') }}">
+    <div class="col-md-3">
+      <input class="form-control" name="q" value="{{ search }}" placeholder="Search title or venue...">
+    </div>
+    <div class="col-md-3">
+      <select class="form-select" name="department">
+        <option value="">Arranged by (Any Dept)</option>
+        {% for d in departments %}
+          <option value="{{ d }}" {{ 'selected' if selected_department == d }}>{{ d }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" name="category">
+        <option value="">All Categories</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {{ 'selected' if selected_category == c }}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select class="form-select" name="event_type">
+        <option value="">All Formats</option>
+        <option value="Individual" {{ 'selected' if selected_type == 'Individual' }}>👤 Solo Events</option>
+        <option value="Team" {{ 'selected' if selected_type == 'Team' }}>👥 Team Events</option>
+      </select>
+    </div>
+    <div class="col-md-2 d-flex gap-1">
+      <button class="btn btn-primary w-100 fw-semibold" type="submit">Filter</button>
+      {% if search or selected_department or selected_category or selected_type %}
+        <a href="{{ url_for('browse_events') }}" class="btn btn-outline-secondary" title="Clear Filters">&times;</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+
+<!-- Events Grid -->
+<div class="row g-4">
+  {% for event in events %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card event-card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+      {% if event.poster %}
+        <img class="card-img-top poster" src="{{ url_for('static', filename='uploads/' + event.poster) }}" alt="{{ event.title }}">
+      {% else %}
+        <div class="p-3 text-white" style="background: linear-gradient(135deg, {% if event.category == 'Technical' %}#0b2545, #165b8c{% else %}#3f2b96, #a8c0ff{% endif %}); min-height: 80px;">
+          <div class="d-flex justify-content-between">
+            <span class="badge bg-white text-dark small rounded-pill px-2 py-1">
+              Arranged by {{ event.department }} Dept
+            </span>
+            <span class="badge bg-light bg-opacity-25 text-white small rounded-pill px-2 py-1">
+              {% if event.is_team_event %}👥 Team ({{ event.min_team_size }}-{{ event.max_team_size }}){% else %}👤 Solo{% endif %}
+            </span>
+          </div>
+        </div>
+      {% endif %}
+
+      <div class="card-body p-4 d-flex flex-column">
+        <div class="d-flex flex-wrap gap-1 mb-2">
+          <span class="badge {{ 'bg-primary' if event.category == 'Technical' else 'bg-warning text-dark' }} rounded-pill">
+            {{ event.category }}
+          </span>
+          <span class="badge bg-success bg-opacity-75 text-white rounded-pill">
+            &check; All Depts Eligible
+          </span>
+        </div>
+
+        <h2 class="h5 fw-bold text-dark mb-2">
+          <a href="{{ url_for('event_detail', event_id=event.id) }}" class="text-decoration-none text-dark">
+            {{ event.title }}
+          </a>
+        </h2>
+
+        <p class="small text-secondary mb-2">
+          📅 {{ event.event_date }} {% if event.event_time %}· 🕒 {{ event.event_time }}{% endif %}<br>
+          📍 {{ event.venue }}
+        </p>
+
+        <p class="text-muted small flex-grow-1">
+          {{ event.description[:110] }}{% if event.description|length > 110 %}...{% endif %}
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto">
+          <div>
+            <span class="fs-5 fw-bold text-primary">
+              {{ 'Free' if event.fee == 0 else '₹%.2f'|format(event.fee) }}
+            </span>
+            {% if event.is_team_event and event.fee > 0 %}
+              <small class="text-muted d-block" style="font-size: 0.75rem;">/ team</small>
+            {% endif %}
+          </div>
+          <div class="d-flex gap-2">
+            <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('event_detail', event_id=event.id) }}">
+              Details
+            </a>
+            {% if session.get('role') == 'student' %}
+              <a class="btn btn-sm btn-primary fw-semibold" href="{{ url_for('register_event', event_id=event.id) }}">
+                Register
+              </a>
+            {% else %}
+              <a class="btn btn-sm btn-primary fw-semibold" href="{{ url_for('event_detail', event_id=event.id) }}">
+                Register
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="text-center p-5 bg-white rounded-4 shadow-sm border">
+      <div class="display-6 mb-3">🔍</div>
+      <h3 class="h5">No events found matching your criteria</h3>
+      <p class="text-secondary small">Try adjusting your department or category filters, or search term.</p>
+      <a href="{{ url_for('browse_events') }}" class="btn btn-outline-primary btn-sm mt-2">Reset all filters</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

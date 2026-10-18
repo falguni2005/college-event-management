@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}Complete Payment · {{ reg.event.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 850px;">
+  <div class="mb-3">
+    <a href="{{ url_for('student_dashboard') }}" class="text-decoration-none text-secondary">
+      &larr; Back to Dashboard
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <!-- Header -->
+    <div class="p-4 text-white" style="background: linear-gradient(135deg, #0b2545 0%, #154c79 50%, #1a6dae 100%);">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <span class="badge bg-light text-dark px-3 py-1 rounded-pill mb-2">Event Registration Payment</span>
+          <h1 class="h3 fw-bold mb-1">{{ reg.event.title }}</h1>
+          <p class="text-white-50 mb-0 small">
+            Arranged by {{ reg.event.department }} Dept · 📅 {{ reg.event.event_date }} · 📍 {{ reg.event.venue }}
+          </p>
+        </div>
+        <div class="text-end">
+          <small class="text-white-50 d-block">Amount Due</small>
+          <span class="fs-2 fw-bold text-warning">₹{{ '%.2f'|format(reg.event.fee) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card-body p-4 p-md-5">
+      <!-- Registration Details Banner -->
+      <div class="p-3 bg-light rounded-3 border mb-4">
+        <div class="row g-2">
+          <div class="col-md-4">
+            <span class="text-secondary small d-block">Attendee / Leader</span>
+            <strong>{{ reg.user.name }}</strong> ({{ reg.user.department }})
+          </div>
+          <div class="col-md-4">
+            <span class="text-secondary small d-block">Registration Format</span>
+            {% if reg.participation_type == 'Team' %}
+              <span class="badge bg-primary-subtle text-primary">👥 Team ({{ reg.team_size }} members)</span>
+              <div class="small fw-semibold mt-1">{{ reg.team_name }}</div>
+            {% else %}
+              <span class="badge bg-info-subtle text-info-emphasis">👤 Solo Participant</span>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <span class="text-secondary small d-block">Generated Ticket ID</span>
+            <code class="fs-6 text-primary">{{ reg.ticket_code }}</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-4 align-items-center">
+        <!-- UPI QR Code Presentation (Laptop / Desktop) -->
+        <div class="col-md-5 text-center">
+          <div class="p-4 bg-light rounded-4 border shadow-sm d-inline-block">
+            <h2 class="h6 fw-bold text-dark mb-2">Scan &amp; Pay via Any UPI App</h2>
+            {% if qr_base64 %}
+              <img src="data:image/png;base64,{{ qr_base64 }}" alt="UPI QR Code" class="img-fluid rounded border p-1 bg-white" style="width: 200px; height: 200px;">
+            {% endif %}
+            <div class="mt-3">
+              <span class="badge bg-secondary-subtle text-dark small font-monospace py-1 px-3">UPI ID: {{ upi_pa }}</span>
+              <small class="text-muted d-block mt-1">Google Pay, PhonePe, Paytm, BHIM</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment Instructions & Verification Form -->
+        <div class="col-md-7">
+          <div class="mb-4">
+            <h2 class="h5 fw-bold text-dark mb-2">How to Complete Payment:</h2>
+            <ol class="small text-secondary ps-3 mb-0">
+              <li class="mb-1">Scan the QR code on the left with any UPI application on your mobile device.</li>
+              <li class="mb-1">Verify payment amount (<strong>₹{{ '%.2f'|format(reg.event.fee) }}</strong>) and recipient (<strong>College Events</strong>).</li>
+              <li class="mb-1">Note down the 12-digit <strong>UPI Reference / UTR Number</strong> from your payment receipt.</li>
+              <li>Enter the reference number below to confirm your registration.</li>
+            </ol>
+          </div>
+
+          <!-- Mobile Quick Action -->
+          <div class="d-md-none mb-3">
+            <a href="{{ upi_url }}" class="btn btn-outline-primary w-100 fw-semibold">
+              📱 Open UPI App on Phone
+            </a>
+          </div>
+
+          <!-- UTR Submission Form -->
+          <form method="POST" class="p-3 bg-light rounded-3 border">
+            <label class="form-label fw-semibold small text-dark mb-1">
+              Enter UPI Transaction Reference / UTR Number *
+            </label>
+            <div class="input-group mb-2">
+              <input type="text" class="form-control" name="payment_reference" placeholder="e.g. 428912345678" pattern="[A-Za-z0-9_-]{6,30}">
+              <button class="btn btn-primary fw-semibold" type="submit" name="action" value="submit_ref">
+                Submit &amp; Verify
+              </button>
+            </div>
+            <div class="form-text small">
+              Entering the reference confirms your registration under review by event coordinators.
+            </div>
+
+            <hr class="my-3">
+
+            <!-- Demo Mode Instant Payment -->
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <small class="text-muted d-block fw-semibold">Testing or Demonstration Mode?</small>
+                <small class="text-secondary">Instantly simulate successful payment.</small>
+              </div>
+              <button class="btn btn-success btn-sm fw-semibold shadow-sm" type="submit" name="action" value="instant_pay">
+                ⚡ Instant Test Pay (Demo)
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

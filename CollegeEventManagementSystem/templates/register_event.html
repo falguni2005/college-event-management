@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+{% block title %}Register for {{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 900px;">
+  <div class="mb-3">
+    <a href="{{ url_for('event_detail', event_id=event.id) }}" class="text-decoration-none text-secondary">
+      &larr; Back to Event Details
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden mb-4">
+    <div class="p-4 text-white" style="background: linear-gradient(135deg, #0b2545 0%, #134e7c 50%, #1d72b8 100%);">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+        <span class="badge {{ 'bg-primary' if event.category == 'Technical' else 'bg-warning text-dark' }} px-3 py-2 rounded-pill">
+          {{ event.category }}
+        </span>
+        <span class="badge bg-light text-dark px-3 py-2 rounded-pill">
+          Arranged by {{ event.department }} Dept
+        </span>
+        <span class="badge bg-success bg-opacity-75 text-white px-3 py-2 rounded-pill">
+          &check; Open to All Departments
+        </span>
+        <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
+          {% if event.is_team_event %}
+            👥 Team ({{ event.min_team_size }} - {{ event.max_team_size }} Members)
+          {% else %}
+            👤 Solo / Individual
+          {% endif %}
+        </span>
+      </div>
+
+      <h1 class="h3 fw-bold mb-2">{{ event.title }}</h1>
+      <p class="mb-0 text-white-50">
+        📅 {{ event.event_date }} {% if event.event_time %}· 🕒 {{ event.event_time }}{% endif %} · 📍 {{ event.venue }}
+      </p>
+    </div>
+
+    <div class="card-body p-4 p-md-5">
+      <div class="row g-4 mb-4 pb-3 border-bottom">
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Participation Fee</small>
+          <span class="fs-4 fw-bold text-primary">
+            {{ 'Free' if event.fee == 0 else '₹%.2f'|format(event.fee) }}
+          </span>
+          {% if event.is_team_event and event.fee > 0 %}
+            <small class="text-muted d-block">(Total per team)</small>
+          {% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Available Seats</small>
+          <span class="fs-4 fw-bold text-success">{{ event.seats_left }}</span>
+          <small class="text-muted d-block">of {{ event.capacity }} total</small>
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Registration Deadline</small>
+          <span class="fw-semibold text-dark">{{ event.deadline or 'Open until full' }}</span>
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Student Eligibility</small>
+          <span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2">
+            All branches welcome
+          </span>
+        </div>
+      </div>
+
+      <form method="POST" id="registrationForm">
+        <!-- Student / Team Leader Info -->
+        <div class="mb-4">
+          <h2 class="h5 fw-bold text-dark mb-3">
+            {% if event.is_team_event %}
+              1. Team Leader Information (You)
+            {% else %}
+              1. Participant Details
+            {% endif %}
+          </h2>
+          <div class="row g-3 p-3 bg-light rounded-3 border">
+            <div class="col-md-4">
+              <label class="form-label small text-secondary fw-semibold">Full Name</label>
+              <input type="text" class="form-control" value="{{ user.name }}" readonly disabled>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-secondary fw-semibold">College Email</label>
+              <input type="text" class="form-control" value="{{ user.email }}" readonly disabled>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label small text-secondary fw-semibold">Department</label>
+              <input type="text" class="form-control" value="{{ user.department }}" readonly disabled>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-dark fw-semibold">Phone / WhatsApp Number *</label>
+              <input type="tel" class="form-control" name="phone" required placeholder="e.g. 9876543210" pattern="[0-9]{10}">
+              <div class="form-text">For event updates and venue announcements.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label small text-dark fw-semibold">
+                {% if event.is_team_event %}Leader Roll / PRN Number{% else %}Roll / PRN Number{% endif %}
+              </label>
+              <input type="text" class="form-control" name="leader_roll" placeholder="e.g. 21CS042">
+            </div>
+          </div>
+        </div>
+
+        {% if event.is_team_event %}
+        <!-- Team Details Section -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 fw-bold text-dark mb-0">2. Team Configuration</h2>
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-2 px-3">
+              Team Size: <span id="teamCountBadge">2</span> / {{ event.max_team_size }}
+            </span>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Team Name *</label>
+            <input type="text" class="form-control form-control-lg" name="team_name" required 
+                   placeholder="e.g. CodeCraft Titans, Neural Networkers, RoboDominators">
+            <div class="form-text">Choose a unique, creative name for your team.</div>
+          </div>
+
+          <div class="alert alert-info border-0 rounded-3 mb-3 d-flex align-items-center gap-2">
+            <div>💡</div>
+            <div class="small">
+              <strong>Inter-department teams are fully supported!</strong> Your team members can belong to any department (CS, AIDS, IOT, MECH, CIVIL, ELEC, BBA, BCA, etc.).
+            </div>
+          </div>
+
+          <!-- Dynamic Team Members Container -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Additional Team Members</label>
+            <div id="membersContainer" class="d-flex flex-column gap-3">
+              <!-- Dynamically rendered via JS -->
+            </div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary btn-sm" id="addMemberBtn">
+              ➕ Add Another Member
+            </button>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="removeMemberBtn">
+              ➖ Remove Last Member
+            </button>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Notes / Special requirements -->
+        <div class="mb-4">
+          <label class="form-label small text-secondary fw-semibold">Special Notes / Queries (Optional)</label>
+          <textarea class="form-control" name="notes" rows="2" placeholder="Any dietary requirements, hardware requests, or questions..."></textarea>
+        </div>
+
+        <!-- Summary & Submission -->
+        <div class="p-4 bg-light rounded-3 border">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+              <h3 class="h6 fw-bold mb-1">Registration Summary</h3>
+              <p class="text-secondary small mb-0">
+                {% if event.is_team_event %}Team Entry Pass{% else %}Individual Entry Pass{% endif %} · Arranged by {{ event.department }} Dept
+              </p>
+            </div>
+            <div class="text-end">
+              <small class="text-secondary d-block">Total Payable</small>
+              <span class="fs-4 fw-bold text-primary">
+                {{ '₹0.00 (Free)' if event.fee == 0 else '₹%.2f'|format(event.fee) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary btn-lg fw-semibold shadow-sm">
+              {% if event.fee == 0 %}
+                &check; Complete Free Registration &amp; Get Pass
+              {% else %}
+                &rarr; Proceed to UPI Payment (₹{{ '%.2f'|format(event.fee) }})
+              {% endif %}
+            </button>
+          </div>
+          <p class="text-center text-muted small mt-2 mb-0">
+            A scannable QR ticket code will be generated upon completion.
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if event.is_team_event %}
+<script>
+  (function() {
+    const minMembers = {{ event.min_team_size or 2 }};
+    const maxMembers = {{ event.max_team_size or 5 }};
+    const departments = {{ departments|tojson }};
+    const container = document.getElementById('membersContainer');
+    const addBtn = document.getElementById('addMemberBtn');
+    const removeBtn = document.getElementById('removeMemberBtn');
+    const countBadge = document.getElementById('teamCountBadge');
+
+    let additionalMemberCount = 0;
+
+    function createMemberCard(index) {
+      const memberNumber = index + 2; // Member 1 is the leader
+      const card = document.createElement('div');
+      card.className = 'card border rounded-3 p-3 bg-white member-card shadow-sm';
+      card.id = 'member_card_' + index;
+
+      let deptOptions = departments
+        .filter(d => d !== "Open to All")
+        .map(d => `<option value="${d}">${d}</option>`)
+        .join('');
+
+      card.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold text-primary small">Member ${memberNumber} Details</span>
+          <span class="badge bg-secondary-subtle text-secondary small">Required</span>
+        </div>
+        <div class="row g-2">
+          <div class="col-md-4">
+            <label class="form-label small text-secondary">Full Name *</label>
+            <input type="text" class="form-control form-control-sm" name="member_name[]" required placeholder="Member ${memberNumber} name">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary">Department *</label>
+            <select class="form-select form-select-sm" name="member_dept[]" required>
+              ${deptOptions}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small text-secondary">College Email</label>
+            <input type="email" class="form-control form-control-sm" name="member_email[]" placeholder="student@college.edu">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small text-secondary">Roll / ID</label>
+            <input type="text" class="form-control form-control-sm" name="member_roll[]" placeholder="Roll No">
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    function updateControls() {
+      const totalTeamSize = 1 + additionalMemberCount;
+      countBadge.textContent = totalTeamSize;
+
+      if (totalTeamSize >= maxMembers) {
+        addBtn.disabled = true;
+      } else {
+        addBtn.disabled = false;
+      }
+
+      // Can only remove down to minMembers - 1
+      if (totalTeamSize <= minMembers) {
+        removeBtn.disabled = true;
+      } else {
+        removeBtn.disabled = false;
+      }
+    }
+
+    function addMember() {
+      if (1 + additionalMemberCount < maxMembers) {
+        const card = createMemberCard(additionalMemberCount);
+        container.appendChild(card);
+        additionalMemberCount++;
+        updateControls();
+      }
+    }
+
+    function removeMember() {
+      if (1 + additionalMemberCount > minMembers) {
+        container.removeChild(container.lastChild);
+        additionalMemberCount--;
+        updateControls();
+      }
+    }
+
+    addBtn.addEventListener('click', addMember);
+    removeBtn.addEventListener('click', removeMember);
+
+    // Initial populate: ensure team reaches minMembers
+    const initialNeeded = Math.max(1, minMembers - 1);
+    for (let i = 0; i < initialNeeded; i++) {
+      addMember();
+    }
+  })();
+</script>
+{% endif %}
+{% endblock %}

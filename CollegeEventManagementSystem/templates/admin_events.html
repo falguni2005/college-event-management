@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Manage Events · Admin Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold text-dark mb-1">Manage Campus Events</h1>
+    <p class="text-secondary small mb-0">Create, edit, and organize events across all departments.</p>
+  </div>
+  <a class="btn btn-primary fw-semibold shadow-sm px-4" href="{{ url_for('admin_event_form') }}">
+    ＋ Add New Event
+  </a>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light text-secondary small text-uppercase">
+        <tr>
+          <th>Event Title</th>
+          <th>Category</th>
+          <th>Arranging Dept</th>
+          <th>Format</th>
+          <th>Date &amp; Venue</th>
+          <th>Fee</th>
+          <th>Registrations</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in events %}
+        <tr>
+          <td>
+            <a href="{{ url_for('event_detail', event_id=e.id) }}" class="fw-bold text-dark text-decoration-none">
+              {{ e.title }}
+            </a>
+          </td>
+          <td>
+            <span class="badge {{ 'bg-primary' if e.category == 'Technical' else 'bg-warning text-dark' }} rounded-pill">
+              {{ e.category }}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-secondary-subtle text-secondary">{{ e.department }}</span>
+          </td>
+          <td>
+            {% if e.is_team_event %}
+              <span class="badge bg-primary-subtle text-primary">
+                👥 Team ({{ e.min_team_size }}-{{ e.max_team_size }})
+              </span>
+            {% else %}
+              <span class="badge bg-info-subtle text-info-emphasis">👤 Solo</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="small fw-semibold">{{ e.event_date }}</div>
+            <div class="text-muted small">{{ e.venue }}</div>
+          </td>
+          <td>
+            <strong>{{ 'Free' if e.fee == 0 else '₹%.2f'|format(e.fee) }}</strong>
+          </td>
+          <td>
+            <span class="badge bg-light text-dark border">
+              {{ e.confirmed_count }} / {{ e.capacity }}
+            </span>
+          </td>
+          <td>
+            <span class="badge {{ 'bg-success' if e.status == 'Published' else ('bg-secondary' if e.status == 'Draft' else 'bg-danger') }}">
+              {{ e.status }}
+            </span>
+          </td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-1">
+              <a class="btn btn-sm btn-outline-primary" href="{{ url_for('admin_event_form', event_id=e.id) }}">
+                Edit
+              </a>
+              <form class="d-inline" method="POST" action="{{ url_for('admin_event_delete', event_id=e.id) }}" onsubmit="return confirm('Are you sure you want to delete or cancel this event?');">
+                <button class="btn btn-sm btn-outline-danger">
+                  Delete
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" class="text-center py-5 text-muted">No events configured yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

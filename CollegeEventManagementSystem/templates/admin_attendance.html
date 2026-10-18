@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Ticket Attendance Check-in · Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 800px;">
+  <div class="mb-3">
+    <a href="{{ url_for('admin_dashboard') }}" class="text-decoration-none text-secondary">
+      &larr; Back to Admin Dashboard
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-4">
+    <h1 class="h3 fw-bold text-dark mb-1">🎟️ Ticket Code Check-in</h1>
+    <p class="text-secondary small mb-4">
+      Scan QR code with a barcode reader or manually type the student's unique 6-12 character ticket code.
+    </p>
+
+    <form method="POST" class="mb-4">
+      <div class="input-group input-group-lg">
+        <span class="input-group-text bg-light">#</span>
+        <input class="form-control font-monospace" name="ticket_code" required autofocus placeholder="e.g. A1B2C3D4" style="text-transform: uppercase;">
+        <button class="btn btn-primary fw-semibold px-4" type="submit">Verify &amp; Check In</button>
+      </div>
+      <div class="form-text mt-2">Works for both Individual passes and Team passes.</div>
+    </form>
+
+    {% if result %}
+    <div class="card border border-success rounded-4 p-4 bg-light">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 fw-bold text-success mb-0">&check; Ticket Found: {{ result.ticket_code }}</h2>
+        <span class="badge {{ 'bg-success' if result.attended else 'bg-warning text-dark' }} px-3 py-2 rounded-pill">
+          {{ 'Attendance Confirmed' if result.attended else 'Pending Check-in' }}
+        </span>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <small class="text-secondary d-block">Student / Team Leader</small>
+          <strong class="text-dark">{{ result.user.name }}</strong> ({{ result.user.department }})
+          <div class="text-muted small">{{ result.user.email }}</div>
+          {% if result.phone %}<div class="text-muted small">📞 {{ result.phone }}</div>{% endif %}
+        </div>
+        <div class="col-md-6">
+          <small class="text-secondary d-block">Event</small>
+          <strong class="text-dark">{{ result.event.title }}</strong>
+          <div class="text-muted small">Arranged by {{ result.event.department }} Dept · 📍 {{ result.event.venue }}</div>
+        </div>
+      </div>
+
+      {% if result.participation_type == 'Team' %}
+      <div class="p-3 bg-white rounded-3 border mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold text-primary">Team: {{ result.team_name }}</span>
+          <span class="badge bg-primary-subtle text-primary">{{ result.team_size }} Members</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-sm table-borderless small mb-0">
+            <thead>
+              <tr class="text-secondary"><th>#</th><th>Member Name</th><th>Department</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+              {% for m in result.parsed_members() %}
+              <tr>
+                <td>{{ loop.index }}</td>
+                <td class="fw-semibold">{{ m.name }}</td>
+                <td><span class="badge bg-secondary-subtle text-secondary">{{ m.department }}</span></td>
+                <td>{{ m.role }}</td>
+              </tr>
+              {% else %}
+              <tr><td colspan="4">{{ result.user.name }} (Leader)</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="row g-2 pt-2 border-top">
+        <div class="col-6">
+          <small class="text-secondary d-block">Payment Status</small>
+          <span class="badge {{ 'bg-success' if result.payment_status in ['Paid', 'Not Required'] else 'bg-danger' }}">
+            {{ result.payment_status }}
+          </span>
+          {% if result.payment_reference %}
+            <span class="small font-monospace text-muted ms-1">({{ result.payment_reference }})</span>
+          {% endif %}
+        </div>
+        <div class="col-6 text-end">
+          <a href="{{ url_for('view_ticket', registration_id=result.id) }}" class="btn btn-sm btn-outline-primary" target="_blank">
+            Open Digital Pass &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

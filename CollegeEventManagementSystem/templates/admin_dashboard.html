@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard · CEMS{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold text-dark mb-1">Campus Administration Dashboard</h1>
+    <p class="text-secondary small mb-0">Monitor campus events, cross-department registrations, team rosters, and payment revenue.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-primary fw-semibold shadow-sm px-3" href="{{ url_for('admin_event_form') }}">
+      ＋ Create New Event
+    </a>
+    <a class="btn btn-outline-success fw-semibold shadow-sm" href="{{ url_for('export_registrations') }}">
+      📥 Export CSV
+    </a>
+  </div>
+</div>
+
+<!-- Interactive KPI Metrics Bar -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card border-0 shadow-sm rounded-4 p-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center text-secondary small fw-semibold">
+        <span>Total Events</span>
+        <span class="fs-4">🏢</span>
+      </div>
+      <div class="stat-number text-primary">{{ event_count }}</div>
+      <div class="small text-muted">Across all branches</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card border-0 shadow-sm rounded-4 p-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center text-secondary small fw-semibold">
+        <span>Registered Students</span>
+        <span class="fs-4">🎓</span>
+      </div>
+      <div class="stat-number text-dark">{{ student_count }}</div>
+      <div class="small text-success fw-semibold">&check; Multi-department</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card border-0 shadow-sm rounded-4 p-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center text-secondary small fw-semibold">
+        <span>Total Admissions</span>
+        <span class="fs-4">👥</span>
+      </div>
+      <div class="stat-number text-success">{{ registration_count }}</div>
+      <div class="small text-muted">{{ team_count }} Teams &middot; {{ solo_count }} Solo</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-lg-3">
+    <div class="card stat-card border-0 shadow-sm rounded-4 p-3 bg-white">
+      <div class="d-flex justify-content-between align-items-center text-secondary small fw-semibold">
+        <span>Fee Collection</span>
+        <span class="fs-4">💰</span>
+      </div>
+      <div class="stat-number text-warning">₹{{ '%.2f'|format(paid_total) }}</div>
+      <div class="small text-muted">{{ attended_count }} checked in</div>
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Quick Check-in & Department Analytics Row -->
+<div class="row g-4 mb-4">
+  <!-- Interactive Quick Check-in Box -->
+  <div class="col-lg-5">
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+      <h2 class="h5 fw-bold text-dark mb-1">⚡ Quick Ticket Code Check-in</h2>
+      <p class="text-secondary small mb-3">Scan barcode or enter code to mark attendance and activate certificate.</p>
+
+      <form method="POST" action="{{ url_for('admin_attendance') }}">
+        <div class="input-group mb-2">
+          <input type="text" class="form-control font-monospace" name="ticket_code" placeholder="e.g. A47CC7" required style="text-transform: uppercase;">
+          <button class="btn btn-primary fw-semibold" type="submit">Verify &amp; Admit</button>
+        </div>
+      </form>
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+        <span class="small text-muted">Attendance verified: <strong>{{ attended_count }}</strong></span>
+        <a href="{{ url_for('admin_attendance') }}" class="small text-decoration-none">Full Check-in Portal &rarr;</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Department Distribution Breakdown -->
+  <div class="col-lg-7">
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h2 class="h5 fw-bold text-dark mb-0">📊 Department Participation Analytics</h2>
+        <span class="badge bg-primary-subtle text-primary">{{ registration_count }} Total</span>
+      </div>
+      <p class="text-secondary small mb-3">Distribution of student registrations by department:</p>
+
+      <div class="d-flex flex-column gap-2">
+        {% for dept, count in dept_counts.items() %}
+        <div>
+          <div class="d-flex justify-content-between small mb-1">
+            <span class="fw-semibold text-dark">{{ dept }}</span>
+            <span class="text-muted">{{ count }} registrations ({{ '%.0f'|format((count / (registration_count or 1)) * 100) }}%)</span>
+          </div>
+          <div class="progress" style="height: 8px;">
+            <div class="progress-bar bg-primary" role="progressbar" style="width: {{ (count / (registration_count or 1)) * 100 }}%"></div>
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted small">No registration distribution data yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Navigation Shortcuts -->
+<div class="d-flex flex-wrap gap-2 mb-4">
+  <a class="btn btn-outline-primary rounded-pill px-3" href="{{ url_for('admin_events') }}">
+    🏢 Manage Events ({{ event_count }})
+  </a>
+  <a class="btn btn-outline-primary rounded-pill px-3" href="{{ url_for('admin_registrations') }}">
+    👥 Registrations &amp; Payments ({{ registration_count }})
+  </a>
+  <a class="btn btn-outline-primary rounded-pill px-3" href="{{ url_for('admin_attendance') }}">
+    🎟️ Ticket Check-in Scanner
+  </a>
+  <a class="btn btn-outline-secondary rounded-pill px-3" href="{{ url_for('export_registrations') }}">
+    📥 Download CSV Report
+  </a>
+</div>
+
+<!-- Recent Events & Registrations Tabbed View -->
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 bg-white">
+  <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+    <h2 class="h5 fw-bold text-dark mb-0">Recent Campus Events</h2>
+    <a href="{{ url_for('admin_events') }}" class="small text-decoration-none">View All Events &rarr;</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light small text-uppercase">
+        <tr>
+          <th>Event Title</th>
+          <th>Category</th>
+          <th>Host Dept</th>
+          <th>Format</th>
+          <th>Date</th>
+          <th>Status</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for e in events %}
+        <tr>
+          <td>
+            <a href="{{ url_for('event_detail', event_id=e.id) }}" class="fw-bold text-dark text-decoration-none">
+              {{ e.title }}
+            </a>
+          </td>
+          <td>
+            <span class="badge {{ 'bg-primary' if e.category == 'Technical' else 'bg-warning text-dark' }} rounded-pill">
+              {{ e.category }}
+            </span>
+          </td>
+          <td>
+            <span class="badge bg-secondary-subtle text-secondary">{{ e.department }}</span>
+          </td>
+          <td>
+            {% if e.is_team_event %}
+              <span class="badge bg-primary-subtle text-primary">👥 Team ({{ e.min_team_size }}-{{ e.max_team_size }})</span>
+            {% else %}
+              <span class="badge bg-info-subtle text-info-emphasis">👤 Solo</span>
+            {% endif %}
+          </td>
+          <td>{{ e.event_date }}</td>
+          <td>
+            <span class="badge {{ 'bg-success' if e.status == 'Published' else 'bg-secondary' }}">
+              {{ e.status }}
+            </span>
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('admin_event_form', event_id=e.id) }}" class="btn btn-sm btn-outline-primary">
+              Edit
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

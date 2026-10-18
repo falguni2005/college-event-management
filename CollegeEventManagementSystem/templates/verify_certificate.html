@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Verify Credential · {{ ticket_code }}{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+  <div class="card border-0 shadow-lg rounded-4 overflow-hidden text-center p-4 p-md-5 bg-white">
+    {% if reg and reg.attended %}
+      <div class="display-3 text-success mb-2">&#10004;</div>
+      <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fs-6 mb-3 d-inline-block">
+        Official Authenticated Certificate
+      </span>
+      <h1 class="h3 fw-bold text-dark mb-1">Credential Verification Record</h1>
+      <p class="text-secondary small mb-4">This digital certificate has been issued and verified by the College Event Management System (CEMS).</p>
+
+      <div class="p-4 bg-light rounded-4 border text-start mb-4">
+        <div class="row g-3">
+          <div class="col-sm-6">
+            <small class="text-secondary d-block">Recipient Name</small>
+            <strong class="fs-5 text-dark">{{ reg.user.name }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <small class="text-secondary d-block">Department</small>
+            <span class="badge bg-secondary-subtle text-secondary fs-6">{{ reg.user.department }}</span>
+          </div>
+          <div class="col-sm-6">
+            <small class="text-secondary d-block">Event Title</small>
+            <strong class="text-dark">{{ reg.event.title }}</strong>
+          </div>
+          <div class="col-sm-6">
+            <small class="text-secondary d-block">Arranging Department</small>
+            <span class="badge bg-light text-dark border">{{ reg.event.department }}</span>
+          </div>
+          <div class="col-sm-6">
+            <small class="text-secondary d-block">Event Date</small>
+            <span class="text-dark">{{ reg.event.event_date }}</span>
+          </div>
+          <div class="col-sm-6">
+            <small class="text-secondary d-block">Format / Track</small>
+            {% if reg.participation_type == 'Team' %}
+              <span class="text-primary fw-semibold">Team ({{ reg.team_name }})</span>
+            {% else %}
+              <span class="text-dark">Individual</span>
+            {% endif %}
+          </div>
+          <div class="col-12 pt-2 border-top">
+            <small class="text-secondary d-block">Credential Certificate ID</small>
+            <code class="fs-6 text-primary fw-bold">CEMS-CERT-{{ reg.ticket_code }}</code>
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex justify-content-center gap-2">
+        <a href="{{ url_for('certificate', registration_id=reg.id) }}" class="btn btn-primary fw-semibold">
+          🎓 View Official Certificate
+        </a>
+        <a href="{{ url_for('browse_events') }}" class="btn btn-outline-secondary">
+          Explore Campus Events
+        </a>
+      </div>
+    {% elif reg %}
+      <div class="display-3 text-warning mb-2">&#9888;</div>
+      <h1 class="h4 fw-bold text-dark mb-2">Certificate Pending Attendance</h1>
+      <p class="text-secondary mb-4">
+        Ticket <code>{{ ticket_code }}</code> is registered for <strong>{{ reg.event.title }}</strong>, but attendance has not been checked in at the event yet. Certificates are issued automatically upon attendance.
+      </p>
+      <a href="{{ url_for('index') }}" class="btn btn-primary">Return Home</a>
+    {% else %}
+      <div class="display-3 text-danger mb-2">&#10008;</div>
+      <h1 class="h4 fw-bold text-dark mb-2">Invalid Certificate Credential</h1>
+      <p class="text-secondary mb-4">No certificate record was found for ticket code <code>{{ ticket_code }}</code>.</p>
+      <a href="{{ url_for('index') }}" class="btn btn-outline-secondary">Back to Homepage</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

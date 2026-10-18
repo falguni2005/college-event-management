@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Home · College Event Management System{% endblock %}
+
+{% block content %}
+<section class="hero p-4 p-md-5 mb-5 rounded-4 shadow-lg position-relative overflow-hidden"
+  style="background: linear-gradient(135deg, #0b2545 0%, #10416c 40%, #15629a 100%); color: white;">
+  <div class="row align-items-center">
+    <div class="col-lg-8">
+      <span class="badge bg-light text-dark px-3 py-2 rounded-pill mb-3 fw-semibold">
+        ✨ CEMS · Unified Campus Event Hub
+      </span>
+      <h1 class="display-4 fw-bold mb-3 tracking-tight">
+        Discover. Register. Lead Teams.
+      </h1>
+      <p class="lead text-white-50 mb-4" style="font-size: 1.15rem;">
+        Any department can organize events &mdash; <strong>all students from any department can register!</strong>
+        Participate in solo challenges or form cross-department teams for hackathons, bot combats, cultural fests, and
+        business pitches.
+      </p>
+      <div class="d-flex flex-wrap gap-3">
+        <a class="btn btn-primary btn-lg px-4 fw-semibold shadow" href="{{ url_for('browse_events') }}">
+          Explore All Events &rarr;
+        </a>
+        {% if not session.get('user_id') %}
+        <a class="btn btn-outline-light btn-lg px-4" href="{{ url_for('student_register') }}">
+          Create Student Account
+        </a>
+        {% elif session.get('role') == 'student' %}
+        <a class="btn btn-outline-light btn-lg px-4" href="{{ url_for('student_dashboard') }}">
+          My Student Dashboard
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-lg-4 d-none d-lg-block text-center">
+      <div class="p-4 bg-white bg-opacity-10 rounded-4 border border-white border-opacity-25 backdrop-blur">
+        <div class="display-3 mb-2">🏆</div>
+        <h2 class="h5 fw-bold mb-1">Inter-Branch Teams</h2>
+        <p class="small text-white-50 mb-0">Collaborate with peers from CS, AIDS, IOT, MECH, CIVIL, ELEC, BBA, and BCA.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Highlights bar -->
+<div class="row g-3 mb-5 text-center">
+  <div class="col-md-4">
+    <div class="p-3 bg-white rounded-3 shadow-sm border">
+      <div class="fs-4 mb-1">🏢</div>
+      <h2 class="h6 fw-bold mb-1">Any Department Arranges</h2>
+      <p class="text-secondary small mb-0">Events hosted by CS, AIDS, IOT, MECH, CIVIL, ELEC, BBA, and BCA faculties.
+      </p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="p-3 bg-white rounded-3 shadow-sm border">
+      <div class="fs-4 mb-1">👥</div>
+      <h2 class="h6 fw-bold mb-1">Solo &amp; Team Events</h2>
+      <p class="text-secondary small mb-0">Compete individually or build multi-member teams with custom team rosters.
+      </p>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="p-3 bg-white rounded-3 shadow-sm border">
+      <div class="fs-4 mb-1">🎟️</div>
+      <h2 class="h6 fw-bold mb-1">Instant QR Passes</h2>
+      <p class="text-secondary small mb-0">Get digital scannable passes and official participation certificates on
+        attendance.</p>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h2 class="h3 fw-bold text-dark mb-1">Upcoming Campus Events</h2>
+    <p class="text-secondary small mb-0">Browse recent events open for registration across departments.</p>
+  </div>
+  <a href="{{ url_for('browse_events') }}" class="btn btn-outline-primary btn-sm fw-semibold">
+    View All {{ events|length }} Events &rarr;
+  </a>
+</div>
+
+<div class="row g-4 mb-5">
+  {% for event in events[:6] %}
+  <div class="col-md-6 col-lg-4">
+    <div class="card event-card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+      {% if event.poster %}
+      <img class="card-img-top poster" src="{{ url_for('static', filename='uploads/' + event.poster) }}"
+        alt="{{ event.title }}">
+      {% else %}
+      <div class="p-3 text-white"
+        style="background: linear-gradient(135deg, {% if event.category == 'Technical' %}#0b2545, #145b87{% else %}#2b1055, #7597de{% endif %});">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="badge bg-white text-dark small rounded-pill">
+            Arranged by {{ event.department }} Dept
+          </span>
+          <span class="badge bg-light bg-opacity-25 text-white small rounded-pill">
+            {% if event.is_team_event %}👥 Team{% else %}👤 Solo{% endif %}
+          </span>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="card-body p-4 d-flex flex-column">
+        <div class="d-flex flex-wrap gap-1 mb-2">
+          <span
+            class="badge {{ 'bg-primary' if event.category == 'Technical' else 'bg-warning text-dark' }} rounded-pill">
+            {{ event.category }}
+          </span>
+          <span class="badge bg-success bg-opacity-75 text-white rounded-pill">
+            &check; All Depts
+          </span>
+        </div>
+
+        <h3 class="h5 fw-bold text-dark mb-2">
+          <a href="{{ url_for('event_detail', event_id=event.id) }}" class="text-decoration-none text-dark">
+            {{ event.title }}
+          </a>
+        </h3>
+
+        <p class="small text-secondary mb-2">
+          📅 {{ event.event_date }} {% if event.event_time %}· 🕒 {{ event.event_time }}{% endif %}<br>
+          📍 {{ event.venue }}
+        </p>
+
+        <p class="text-muted small flex-grow-1">
+          {{ event.description[:110] }}{% if event.description|length > 110 %}...{% endif %}
+        </p>
+
+        <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-auto">
+          <div>
+            <span class="fs-5 fw-bold text-primary">
+              {{ 'Free' if event.fee == 0 else '₹%.2f'|format(event.fee) }}
+            </span>
+            {% if event.is_team_event and event.fee > 0 %}
+            <small class="text-muted d-block" style="font-size: 0.75rem;">/ team</small>
+            {% endif %}
+          </div>
+          <a class="btn btn-sm btn-primary fw-semibold" href="{{ url_for('event_detail', event_id=event.id) }}">
+            View &amp; Register &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="text-center p-5 bg-white rounded-4 shadow-sm border">
+      <p class="text-secondary">No published events yet.</p>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

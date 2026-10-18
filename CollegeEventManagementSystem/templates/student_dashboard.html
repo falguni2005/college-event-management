@@ -1,0 +1,633 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard · {{ user.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+
+  <!-- Interactive Student Hero & Profile Banner -->
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4 text-white" 
+       style="background: linear-gradient(135deg, #0b2545 0%, #154c79 50%, #1a6dae 100%);">
+    <div class="p-4 p-md-5">
+      <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+          <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+            <span class="badge bg-light text-dark px-3 py-1 rounded-pill fw-semibold">
+              🎓 Student Portal
+            </span>
+            <span class="badge bg-white bg-opacity-25 text-white px-3 py-1 rounded-pill">
+              Dept of {{ user.department }}
+            </span>
+            <span class="badge bg-success bg-opacity-75 text-white px-3 py-1 rounded-pill">
+              &check; Active Campus Scholar
+            </span>
+          </div>
+
+          <h1 class="display-6 fw-bold mb-2">Welcome, {{ user.name }}!</h1>
+          <p class="text-white-50 mb-4" style="max-width: 650px;">
+            Explore hackathons, bot combats, cultural fests, and business pitch events. Form teams with peers from any department and track your verified credentials.
+          </p>
+
+          <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-light fw-bold shadow-sm px-4 rounded-pill" href="{{ url_for('browse_events') }}">
+              🔍 Discover New Events
+            </a>
+            <a class="btn btn-outline-light px-3 rounded-pill" href="#registrationsSection">
+              🎟️ My Passes ({{ stats.total_registered }})
+            </a>
+          </div>
+        </div>
+
+        <!-- Next Event Countdown Card -->
+        <div class="col-lg-4">
+          {% if next_reg %}
+          <div class="p-4 bg-white bg-opacity-10 rounded-4 border border-white border-opacity-25 backdrop-blur text-center">
+            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill small fw-bold mb-2">
+              ⏳ Next Event Countdown
+            </span>
+            <h2 class="h6 fw-bold mb-1 text-white text-truncate" title="{{ next_reg.event.title }}">
+              {{ next_reg.event.title }}
+            </h2>
+            <div class="small text-white-50 mb-3">
+              📅 {{ next_reg.event.event_date }} {% if next_reg.event.event_time %}· {{ next_reg.event.event_time }}{% endif %}
+            </div>
+
+            <!-- Countdown Timer Display -->
+            <div class="d-flex justify-content-center gap-2 mb-3 font-monospace" id="countdownTimer" data-target="{{ next_reg.event.event_date }}">
+              <div class="p-2 bg-dark bg-opacity-50 rounded text-center" style="min-width: 52px;">
+                <span class="fs-5 fw-bold d-block text-warning" id="cdDays">00</span>
+                <span class="text-white-50" style="font-size: 0.65rem;">DAYS</span>
+              </div>
+              <div class="p-2 bg-dark bg-opacity-50 rounded text-center" style="min-width: 52px;">
+                <span class="fs-5 fw-bold d-block text-warning" id="cdHours">00</span>
+                <span class="text-white-50" style="font-size: 0.65rem;">HOURS</span>
+              </div>
+              <div class="p-2 bg-dark bg-opacity-50 rounded text-center" style="min-width: 52px;">
+                <span class="fs-5 fw-bold d-block text-warning" id="cdMins">00</span>
+                <span class="text-white-50" style="font-size: 0.65rem;">MINS</span>
+              </div>
+              <div class="p-2 bg-dark bg-opacity-50 rounded text-center" style="min-width: 52px;">
+                <span class="fs-5 fw-bold d-block text-warning" id="cdSecs">00</span>
+                <span class="text-white-50" style="font-size: 0.65rem;">SECS</span>
+              </div>
+            </div>
+
+            <a href="{{ url_for('view_ticket', registration_id=next_reg.id) }}" class="btn btn-warning btn-sm fw-bold w-100 rounded-pill shadow-sm">
+              🎟️ Open Admission Pass
+            </a>
+          </div>
+          {% else %}
+          <div class="p-4 bg-white bg-opacity-10 rounded-4 border border-white border-opacity-25 text-center">
+            <div class="display-5 mb-2">🎯</div>
+            <h2 class="h6 fw-bold mb-1">No Upcoming Registrations</h2>
+            <p class="text-white-50 small mb-3">Join a solo event or lead a team across CS, AIDS, MECH, CIVIL, and more!</p>
+            <a href="{{ url_for('browse_events') }}" class="btn btn-light btn-sm fw-bold rounded-pill">
+              Browse Events
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Metric KPI Cards (Click to Filter Table) -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card border-0 shadow-sm rounded-4 p-3 interactive-metric active" data-filter="all" role="button" title="Click to view all registrations">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-secondary small fw-semibold">Registered Events</span>
+          <span class="fs-4">🎫</span>
+        </div>
+        <div class="stat-number text-primary">{{ stats.total_registered }}</div>
+        <div class="text-muted small">All active registrations</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card border-0 shadow-sm rounded-4 p-3 interactive-metric" data-filter="confirmed" role="button" title="Click to filter Confirmed & Paid">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-secondary small fw-semibold">Confirmed / Paid</span>
+          <span class="fs-4">✅</span>
+        </div>
+        <div class="stat-number text-success">{{ stats.confirmed }}</div>
+        <div class="text-muted small">Admission confirmed</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card border-0 shadow-sm rounded-4 p-3 interactive-metric" data-filter="pending" role="button" title="Click to filter Pending Payments">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-secondary small fw-semibold">Action Needed</span>
+          <span class="fs-4">⚠️</span>
+        </div>
+        <div class="stat-number text-warning">{{ stats.pending_pay }}</div>
+        <div class="text-muted small">Pending fee verification</div>
+      </div>
+    </div>
+
+    <div class="col-6 col-lg-3">
+      <div class="card stat-card border-0 shadow-sm rounded-4 p-3 interactive-metric" data-filter="attended" role="button" title="Click to filter Certificates Earned">
+        <div class="d-flex justify-content-between align-items-center">
+          <span class="text-secondary small fw-semibold">Certificates Earned</span>
+          <span class="fs-4">🏆</span>
+        </div>
+        <div class="stat-number text-info">{{ stats.certificates }}</div>
+        <div class="text-muted small">Verified certificates</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Interactive Registrations Table Section -->
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-5" id="registrationsSection">
+    <div class="p-4 bg-white border-bottom">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <h2 class="h5 fw-bold text-dark mb-1">My Registered Events &amp; Entry Passes</h2>
+          <p class="text-secondary small mb-0">Search, filter, preview QR ticket codes, and access participation certificates.</p>
+        </div>
+
+        <!-- Live Instant Search & Filter Bar -->
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <div class="input-group input-group-sm" style="min-width: 240px;">
+            <span class="input-group-text bg-light border-end-0">🔍</span>
+            <input type="text" class="form-control border-start-0" id="regSearchInput" placeholder="Filter by title, team, ticket...">
+          </div>
+
+          <!-- Filter Pills -->
+          <div class="btn-group btn-group-sm" role="group">
+            <button type="button" class="btn btn-outline-secondary active tab-filter-btn" data-filter="all">All</button>
+            <button type="button" class="btn btn-outline-secondary tab-filter-btn" data-filter="confirmed">Confirmed</button>
+            <button type="button" class="btn btn-outline-secondary tab-filter-btn" data-filter="pending">Pending</button>
+            <button type="button" class="btn btn-outline-secondary tab-filter-btn" data-filter="attended">Attended</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="registrationsTable">
+        <thead class="table-light text-secondary small text-uppercase">
+          <tr>
+            <th>Event Details</th>
+            <th>Host Department</th>
+            <th>Participation Format</th>
+            <th>Fee</th>
+            <th>Payment Status</th>
+            <th>Ticket Pass</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="registrationsTableBody">
+          {% for r in regs %}
+          <tr class="reg-row" 
+              data-title="{{ r.event.title|lower }}" 
+              data-team="{{ r.team_name|lower }}" 
+              data-ticket="{{ r.ticket_code|lower }}" 
+              data-status="{% if r.attended %}attended{% elif r.payment_status in ['Paid', 'Not Required'] %}confirmed{% else %}pending{% endif %}">
+            <td>
+              <a href="{{ url_for('event_detail', event_id=r.event.id) }}" class="fw-bold text-dark text-decoration-none">
+                {{ r.event.title }}
+              </a>
+              <div class="small text-secondary">
+                📅 {{ r.event.event_date }} {% if r.event.event_time %}· 🕒 {{ r.event.event_time }}{% endif %} · 📍 {{ r.event.venue }}
+              </div>
+            </td>
+            <td>
+              <span class="badge bg-secondary-subtle text-secondary">{{ r.event.department }}</span>
+            </td>
+            <td>
+              {% if r.participation_type == 'Team' %}
+                <span class="badge bg-primary-subtle text-primary fw-semibold">
+                  👥 Team ({{ r.team_size }})
+                </span>
+                <div class="small fw-bold text-dark mt-1">{{ r.team_name }}</div>
+              {% else %}
+                <span class="badge bg-info-subtle text-info-emphasis">👤 Solo</span>
+              {% endif %}
+            </td>
+            <td>
+              <strong>{{ 'Free' if r.event.fee == 0 else '₹%.2f'|format(r.event.fee) }}</strong>
+            </td>
+            <td>
+              {% if r.payment_status in ['Paid', 'Not Required'] %}
+                <span class="badge bg-success">&check; {{ r.payment_status }}</span>
+              {% elif r.payment_status == 'Pending Verification' %}
+                <span class="badge bg-info text-dark">⏳ Under Review</span>
+              {% else %}
+                <span class="badge bg-warning text-dark">⚠️ Payment Pending</span>
+              {% endif %}
+            </td>
+            <td>
+              <!-- Interactive Quick QR Pass Button -->
+              <button class="btn btn-sm btn-outline-primary fw-semibold quick-pass-btn" 
+                      type="button"
+                      data-bs-toggle="modal" 
+                      data-bs-target="#quickPassModal"
+                      data-ticket="{{ r.ticket_code }}"
+                      data-title="{{ r.event.title }}"
+                      data-date="{{ r.event.event_date }}"
+                      data-venue="{{ r.event.venue }}"
+                      data-format="{{ r.participation_type }}"
+                      data-teamname="{{ r.team_name }}"
+                      data-qr="{{ qr_map.get(r.id, '') }}"
+                      data-passurl="{{ url_for('view_ticket', registration_id=r.id) }}">
+                🎟️ <code>{{ r.ticket_code }}</code>
+              </button>
+            </td>
+            <td class="text-end">
+              <div class="d-inline-flex gap-1">
+                <a href="{{ url_for('view_ticket', registration_id=r.id) }}" class="btn btn-sm btn-primary" title="View Full Pass">
+                  Pass
+                </a>
+                {% if r.event.fee > 0 and r.payment_status != 'Paid' %}
+                  <a href="{{ url_for('payment', registration_id=r.id) }}" class="btn btn-sm btn-warning" title="Complete Payment">
+                    Pay
+                  </a>
+                {% endif %}
+                {% if r.attended %}
+                  <a href="{{ url_for('certificate', registration_id=r.id) }}" class="btn btn-sm btn-success fw-semibold" title="View Luxury PSD Certificate">
+                    🎓 Certificate
+                  </a>
+                {% endif %}
+                {% if r.payment_status != 'Paid' %}
+                  <form class="d-inline" method="POST" action="{{ url_for('cancel_registration', registration_id=r.id) }}" onsubmit="return confirm('Cancel this registration?');">
+                    <button class="btn btn-sm btn-outline-danger" title="Cancel Registration">&times;</button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+
+          <!-- Interactive Feedback Form Row -->
+          <tr class="table-light border-bottom feedback-subrow">
+            <td colspan="7" class="py-2 px-3">
+              <form class="row g-2 align-items-center interactive-feedback-form" method="POST" action="{{ url_for('feedback', registration_id=r.id) }}">
+                <div class="col-auto">
+                  <span class="small text-secondary fw-semibold">Event Rating:</span>
+                </div>
+                <div class="col-auto">
+                  <div class="interactive-star-rating" data-regid="{{ r.id }}">
+                    {% for star in [1, 2, 3, 4, 5] %}
+                      <span class="star-btn {{ 'active' if (r.feedback_rating or 5) >= star }}" data-val="{{ star }}">&#9733;</span>
+                    {% endfor %}
+                    <input type="hidden" name="rating" id="ratingInput_{{ r.id }}" value="{{ r.feedback_rating or 5 }}">
+                  </div>
+                </div>
+                <div class="col">
+                  <input class="form-control form-control-sm" name="feedback" value="{{ r.feedback or '' }}" placeholder="Share feedback or review after participating...">
+                </div>
+                <div class="col-auto">
+                  <button class="btn btn-sm btn-outline-secondary" type="submit">Submit Feedback</button>
+                </div>
+              </form>
+            </td>
+          </tr>
+          {% else %}
+          <tr id="emptyTableRow">
+            <td colspan="7" class="text-center py-5">
+              <div class="display-6 mb-2">🎓</div>
+              <h3 class="h6 fw-bold">No event registrations found</h3>
+              <p class="text-muted small">Explore the campus catalog to join solo or team events.</p>
+              <a href="{{ url_for('browse_events') }}" class="btn btn-primary btn-sm rounded-pill px-3">
+                Browse Campus Events &rarr;
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Interactive Campus Events Explorer Section -->
+  <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white mb-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+      <div>
+        <h2 class="h4 fw-bold text-dark mb-1">🌟 Explore Events by Department &amp; Format</h2>
+        <p class="text-secondary small mb-0">Open to all students &mdash; filter dynamically below.</p>
+      </div>
+
+      <!-- Quick Category Filter Pills -->
+      <div class="d-flex flex-wrap gap-2" id="eventCatalogFilters">
+        <button class="btn btn-sm btn-primary active cat-filter-btn" data-category="all">All Events</button>
+        <button class="btn btn-sm btn-outline-secondary cat-filter-btn" data-category="Technical">💻 Technical</button>
+        <button class="btn btn-sm btn-outline-secondary cat-filter-btn" data-category="Non-Technical">🎭 Non-Technical</button>
+        <button class="btn btn-sm btn-outline-secondary cat-filter-btn" data-category="team">👥 Team Events</button>
+        <button class="btn btn-sm btn-outline-secondary cat-filter-btn" data-category="free">🎁 Free Entry</button>
+      </div>
+    </div>
+
+    <div class="row g-3" id="catalogEventsContainer">
+      {% for e in events %}
+      <div class="col-md-6 col-lg-4 catalog-event-item" 
+           data-category="{{ e.category }}" 
+           data-format="{{ 'team' if e.is_team_event else 'solo' }}" 
+           data-free="{{ 'free' if e.fee == 0 else 'paid' }}">
+        <div class="p-3 border rounded-3 bg-light h-100 d-flex flex-column justify-content-between event-hover-card">
+          <div>
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="badge bg-secondary-subtle text-secondary small">
+                Host: {{ e.department }}
+              </span>
+              <span class="badge bg-primary-subtle text-primary small">
+                {% if e.is_team_event %}👥 Team ({{ e.min_team_size }}-{{ e.max_team_size }}){% else %}👤 Solo{% endif %}
+              </span>
+            </div>
+
+            <h3 class="h6 fw-bold mb-1">
+              <a href="{{ url_for('event_detail', event_id=e.id) }}" class="text-decoration-none text-dark">
+                {{ e.title }}
+              </a>
+            </h3>
+            <p class="text-muted small mb-2">
+              📅 {{ e.event_date }} {% if e.event_time %}· 🕒 {{ e.event_time }}{% endif %}<br>
+              📍 {{ e.venue }}
+            </p>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center pt-2 border-top mt-2">
+            <span class="fw-bold small text-primary">{{ 'Free' if e.fee == 0 else '₹%.2f'|format(e.fee) }}</span>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('event_detail', event_id=e.id) }}" class="btn btn-sm btn-outline-secondary py-1 px-2" style="font-size: 0.8rem;">
+                Details
+              </a>
+              <a href="{{ url_for('register_event', event_id=e.id) }}" class="btn btn-sm btn-primary py-1 px-2" style="font-size: 0.8rem;">
+                Register
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Interactive Quick Pass Modal -->
+<div class="modal fade" id="quickPassModal" tabindex="-1" aria-labelledby="quickPassModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="modal-header text-white p-3 border-0" style="background: linear-gradient(135deg, #0b2545, #1d72b8);">
+        <h5 class="modal-title h6 fw-bold" id="quickPassModalLabel">🎟️ Digital Event Admission Pass</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <h4 class="h5 fw-bold text-dark mb-1" id="modalEventTitle">Event Title</h4>
+        <div class="text-secondary small mb-3" id="modalEventDateVenue">Date &amp; Venue</div>
+
+        <div class="p-3 bg-light rounded-4 border d-inline-block shadow-sm mb-3">
+          <img src="" id="modalQrImg" alt="QR Code" class="img-fluid" style="width: 180px; height: 180px;">
+          <div class="mt-2">
+            <small class="text-secondary d-block font-monospace">TICKET CODE</small>
+            <span class="fs-4 fw-bold text-primary font-monospace" id="modalTicketCode">------</span>
+          </div>
+        </div>
+
+        <div id="modalTeamBox" class="p-2 bg-primary-subtle text-primary rounded-3 small mb-3 d-none">
+          👥 Registered Team: <strong id="modalTeamName"></strong>
+        </div>
+
+        <div class="d-flex justify-content-center gap-2">
+          <button class="btn btn-outline-secondary btn-sm" id="modalCopyBtn">
+            📋 Copy Code
+          </button>
+          <a href="#" id="modalPassLink" class="btn btn-primary btn-sm fw-semibold">
+            Open Full Pass &rarr;
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .interactive-metric {
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .interactive-metric:hover, .interactive-metric.active {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px rgba(11, 37, 69, 0.12) !important;
+    border-bottom: 3px solid #1268e8 !important;
+  }
+  .event-hover-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .event-hover-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    background-color: #ffffff !important;
+  }
+  /* Interactive Stars */
+  .interactive-star-rating {
+    font-size: 1.25rem;
+    line-height: 1;
+    cursor: pointer;
+    display: inline-flex;
+    gap: 2px;
+  }
+  .star-btn {
+    color: #cbd5e1;
+    transition: color 0.15s ease, transform 0.15s ease;
+  }
+  .star-btn:hover {
+    transform: scale(1.2);
+  }
+  .star-btn.active {
+    color: #f59e0b;
+  }
+</style>
+
+<script>
+  (function() {
+    // 1. Countdown Timer
+    const cdContainer = document.getElementById('countdownTimer');
+    if (cdContainer) {
+      const targetDateStr = cdContainer.getAttribute('data-target');
+      if (targetDateStr) {
+        const targetDate = new Date(targetDateStr + 'T09:00:00');
+        function updateCountdown() {
+          const now = new Date();
+          const diff = targetDate - now;
+          if (diff <= 0) {
+            document.getElementById('cdDays').textContent = '00';
+            document.getElementById('cdHours').textContent = '00';
+            document.getElementById('cdMins').textContent = '00';
+            document.getElementById('cdSecs').textContent = '00';
+            return;
+          }
+          const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+          const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+          document.getElementById('cdDays').textContent = String(days).padStart(2, '0');
+          document.getElementById('cdHours').textContent = String(hours).padStart(2, '0');
+          document.getElementById('cdMins').textContent = String(mins).padStart(2, '0');
+          document.getElementById('cdSecs').textContent = String(secs).padStart(2, '0');
+        }
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+      }
+    }
+
+    // 2. Interactive Registrations Table Filtering & Live Search
+    const searchInput = document.getElementById('regSearchInput');
+    const tabBtns = document.querySelectorAll('.tab-filter-btn');
+    const metricCards = document.querySelectorAll('.interactive-metric');
+    const rows = document.querySelectorAll('.reg-row');
+    const feedbackSubrows = document.querySelectorAll('.feedback-subrow');
+    let currentFilter = 'all';
+
+    function filterTable() {
+      const query = (searchInput.value || '').toLowerCase().trim();
+
+      rows.forEach((row, idx) => {
+        const subrow = feedbackSubrows[idx];
+        const title = row.getAttribute('data-title') || '';
+        const team = row.getAttribute('data-team') || '';
+        const ticket = row.getAttribute('data-ticket') || '';
+        const status = row.getAttribute('data-status') || '';
+
+        const matchesQuery = !query || title.includes(query) || team.includes(query) || ticket.includes(query);
+        const matchesFilter = currentFilter === 'all' || status === currentFilter;
+
+        if (matchesQuery && matchesFilter) {
+          row.style.display = '';
+          if (subrow) subrow.style.display = '';
+        } else {
+          row.style.display = 'none';
+          if (subrow) subrow.style.display = 'none';
+        }
+      });
+    }
+
+    if (searchInput) {
+      searchInput.addEventListener('input', filterTable);
+    }
+
+    function setActiveFilter(filter) {
+      currentFilter = filter;
+      tabBtns.forEach(btn => {
+        if (btn.getAttribute('data-filter') === filter) {
+          btn.classList.add('active', 'btn-secondary');
+          btn.classList.remove('btn-outline-secondary');
+        } else {
+          btn.classList.remove('active', 'btn-secondary');
+          btn.classList.add('btn-outline-secondary');
+        }
+      });
+      metricCards.forEach(card => {
+        if (card.getAttribute('data-filter') === filter) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+      filterTable();
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => setActiveFilter(btn.getAttribute('data-filter')));
+    });
+
+    metricCards.forEach(card => {
+      card.addEventListener('click', () => {
+        setActiveFilter(card.getAttribute('data-filter'));
+        document.getElementById('registrationsSection').scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // 3. Quick Pass Modal Data Binding
+    const quickPassModal = document.getElementById('quickPassModal');
+    if (quickPassModal) {
+      quickPassModal.addEventListener('show.bs.modal', function(event) {
+        const button = event.relatedTarget;
+        const ticket = button.getAttribute('data-ticket');
+        const title = button.getAttribute('data-title');
+        const date = button.getAttribute('data-date');
+        const venue = button.getAttribute('data-venue');
+        const format = button.getAttribute('data-format');
+        const teamName = button.getAttribute('data-teamname');
+        const qrBase64 = button.getAttribute('data-qr');
+        const passUrl = button.getAttribute('data-passurl');
+
+        document.getElementById('modalEventTitle').textContent = title;
+        document.getElementById('modalEventDateVenue').textContent = '📅 ' + date + ' · 📍 ' + venue;
+        document.getElementById('modalTicketCode').textContent = ticket;
+        document.getElementById('modalQrImg').src = qrBase64 ? 'data:image/png;base64,' + qrBase64 : '';
+        document.getElementById('modalPassLink').href = passUrl;
+
+        const teamBox = document.getElementById('modalTeamBox');
+        if (format === 'Team' && teamName) {
+          teamBox.classList.remove('d-none');
+          document.getElementById('modalTeamName').textContent = teamName;
+        } else {
+          teamBox.classList.add('d-none');
+        }
+
+        const copyBtn = document.getElementById('modalCopyBtn');
+        copyBtn.onclick = function() {
+          navigator.clipboard.writeText(ticket).then(() => {
+            copyBtn.textContent = '✓ Copied!';
+            setTimeout(() => { copyBtn.textContent = '📋 Copy Code'; }, 1500);
+          });
+        };
+      });
+    }
+
+    // 4. Interactive Star Ratings
+    document.querySelectorAll('.interactive-star-rating').forEach(container => {
+      const regId = container.getAttribute('data-regid');
+      const hiddenInput = document.getElementById('ratingInput_' + regId);
+      const stars = container.querySelectorAll('.star-btn');
+
+      stars.forEach(star => {
+        star.addEventListener('click', () => {
+          const val = parseInt(star.getAttribute('data-val'), 10);
+          hiddenInput.value = val;
+          stars.forEach(s => {
+            const sVal = parseInt(s.getAttribute('data-val'), 10);
+            if (sVal <= val) {
+              s.classList.add('active');
+            } else {
+              s.classList.remove('active');
+            }
+          });
+        });
+      });
+    });
+
+    // 5. Dynamic Events Catalog Filters
+    const catBtns = document.querySelectorAll('.cat-filter-btn');
+    const catalogItems = document.querySelectorAll('.catalog-event-item');
+
+    catBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        catBtns.forEach(b => {
+          b.classList.remove('active', 'btn-primary');
+          b.classList.add('btn-outline-secondary');
+        });
+        btn.classList.add('active', 'btn-primary');
+        btn.classList.remove('btn-outline-secondary');
+
+        const cat = btn.getAttribute('data-category');
+        catalogItems.forEach(item => {
+          const itemCat = item.getAttribute('data-category');
+          const itemFormat = item.getAttribute('data-format');
+          const itemFree = item.getAttribute('data-free');
+
+          let show = false;
+          if (cat === 'all') show = true;
+          else if (cat === 'Technical' && itemCat === 'Technical') show = true;
+          else if (cat === 'Non-Technical' && itemCat === 'Non-Technical') show = true;
+          else if (cat === 'team' && itemFormat === 'team') show = true;
+          else if (cat === 'free' && itemFree === 'free') show = true;
+
+          item.style.display = show ? '' : 'none';
+        });
+      });
+    });
+  })();
+</script>
+{% endblock %}

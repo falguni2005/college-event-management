@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Registrations &amp; Payments · Admin Portal{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+  <div>
+    <h1 class="h2 fw-bold text-dark mb-1">Campus Registrations &amp; Passes</h1>
+    <p class="text-secondary small mb-0">Review student registrations, team rosters, approve UPI payments, and verify attendance.</p>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-success fw-semibold shadow-sm" href="{{ url_for('export_registrations') }}">
+      📥 Export All as CSV
+    </a>
+    <a class="btn btn-primary fw-semibold shadow-sm" href="{{ url_for('admin_attendance') }}">
+      📷 QR Ticket Check-in
+    </a>
+  </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light text-secondary small text-uppercase">
+        <tr>
+          <th>Student / Leader</th>
+          <th>Event &amp; Host Dept</th>
+          <th>Participation</th>
+          <th>Fee &amp; Payment</th>
+          <th>Ticket / Ref</th>
+          <th>Attendance</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in regs %}
+        <tr>
+          <td>
+            <div class="fw-bold text-dark">{{ r.user.name }}</div>
+            <div class="small text-secondary">{{ r.user.email }}</div>
+            <span class="badge bg-secondary-subtle text-secondary small">Dept: {{ r.user.department }}</span>
+            {% if r.phone %}
+              <div class="text-muted small mt-1">📞 {{ r.phone }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="fw-semibold text-dark">{{ r.event.title }}</div>
+            <span class="badge bg-light text-dark border small">Arranged by {{ r.event.department }}</span>
+          </td>
+          <td>
+            {% if r.participation_type == 'Team' %}
+              <span class="badge bg-primary px-2 py-1 rounded-pill">
+                👥 Team ({{ r.team_size }})
+              </span>
+              <div class="fw-bold text-primary mt-1">{{ r.team_name }}</div>
+              
+              {% if r.parsed_members() %}
+              <div class="dropdown mt-1">
+                <button class="btn btn-sm btn-outline-secondary py-0 px-2 dropdown-toggle" style="font-size: 0.75rem;" type="button" data-bs-toggle="dropdown">
+                  View {{ r.team_size }} Roster
+                </button>
+                <div class="dropdown-menu p-3 shadow-lg border rounded-3" style="min-width: 280px;">
+                  <h6 class="dropdown-header px-0 text-dark fw-bold">Team Members:</h6>
+                  <ul class="list-unstyled mb-0 small">
+                    {% for m in r.parsed_members() %}
+                    <li class="mb-1 pb-1 border-bottom d-flex justify-content-between">
+                      <span><strong>{{ m.name }}</strong> ({{ m.department }})</span>
+                      <span class="badge bg-light text-secondary">{{ m.role }}</span>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </div>
+              {% endif %}
+            {% else %}
+              <span class="badge bg-info-subtle text-info-emphasis px-2 py-1 rounded-pill">👤 Solo</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="fw-bold">{{ 'Free' if r.event.fee == 0 else '₹%.2f'|format(r.event.fee) }}</div>
+            {% if r.payment_status in ['Paid', 'Not Required'] %}
+              <span class="badge bg-success">&check; {{ r.payment_status }}</span>
+            {% elif r.payment_status == 'Pending Verification' %}
+              <span class="badge bg-info text-dark">⏳ Under Review</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">⚠️ {{ r.payment_status }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <a href="{{ url_for('view_ticket', registration_id=r.id) }}" class="fw-bold font-monospace text-decoration-none">
+              <code>{{ r.ticket_code }}</code>
+            </a>
+            {% if r.payment_reference %}
+              <div class="small text-muted font-monospace mt-1">Ref: {{ r.payment_reference }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.attended %}
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                &check; Checked In
+              </span>
+            {% else %}
+              <span class="badge bg-secondary-subtle text-secondary px-2 py-1">
+                Not checked in
+              </span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <div class="d-inline-flex gap-1">
+              {% if r.event.fee > 0 and r.payment_status != 'Paid' %}
+                <form class="d-inline" method="POST" action="{{ url_for('admin_mark_paid', registration_id=r.id) }}">
+                  <button class="btn btn-sm btn-outline-success" title="Approve Payment">
+                    &check; Paid
+                  </button>
+                </form>
+              {% endif %}
+              <form class="d-inline" method="POST" action="{{ url_for('admin_toggle_attendance', registration_id=r.id) }}">
+                <button class="btn btn-sm btn-outline-primary" title="Toggle Attendance">
+                  {{ 'Uncheck' if r.attended else 'Check In' }}
+                </button>
+              </form>
+              <a href="{{ url_for('view_ticket', registration_id=r.id) }}" class="btn btn-sm btn-light border" title="Pass">
+                Pass
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" class="text-center py-5 text-muted">No student registrations recorded yet.</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

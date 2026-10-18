@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 900px;">
+  <div class="mb-3">
+    <a href="{{ url_for('browse_events') }}" class="text-decoration-none text-secondary">
+      &larr; Back to all events
+    </a>
+  </div>
+
+  <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+    {% if event.poster %}
+      <img src="{{ url_for('static', filename='uploads/' + event.poster) }}" class="card-img-top poster" alt="{{ event.title }}" style="max-height: 350px; object-fit: cover;">
+    {% endif %}
+
+    <div class="p-4 p-md-5">
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <span class="badge {{ 'bg-primary' if event.category == 'Technical' else 'bg-warning text-dark' }} px-3 py-2 rounded-pill">
+          {{ event.category }}
+        </span>
+        <span class="badge bg-secondary px-3 py-2 rounded-pill">
+          Arranged by {{ event.department }} Dept
+        </span>
+        <span class="badge bg-success bg-opacity-75 text-white px-3 py-2 rounded-pill">
+          &check; Open to All Departments
+        </span>
+        <span class="badge bg-info text-dark px-3 py-2 rounded-pill">
+          {% if event.is_team_event %}
+            👥 Team Event ({{ event.min_team_size }} - {{ event.max_team_size }} Members)
+          {% else %}
+            👤 Solo / Individual
+          {% endif %}
+        </span>
+      </div>
+
+      <h1 class="h2 fw-bold text-dark mb-2">{{ event.title }}</h1>
+      <p class="text-secondary fs-6 mb-4">
+        📅 {{ event.event_date }} {% if event.event_time %}· 🕒 {{ event.event_time }}{% endif %} · 📍 {{ event.venue }}
+      </p>
+
+      <div class="row g-3 p-3 bg-light rounded-3 mb-4">
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Participation Fee</small>
+          <span class="fs-4 fw-bold text-primary">{{ 'Free' if event.fee == 0 else '₹%.2f'|format(event.fee) }}</span>
+          {% if event.is_team_event and event.fee > 0 %}
+            <small class="text-muted d-block">(Per Team)</small>
+          {% endif %}
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Available Seats</small>
+          <span class="fs-4 fw-bold text-success">{{ event.seats_left }}</span>
+          <small class="text-muted d-block">of {{ event.capacity }} capacity</small>
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Registration Deadline</small>
+          <span class="fw-semibold text-dark">{{ event.deadline or 'Open' }}</span>
+        </div>
+        <div class="col-6 col-md-3">
+          <small class="text-secondary d-block">Eligibility</small>
+          <span class="text-success fw-semibold">All College Branches</span>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <h2 class="h5 fw-bold text-dark mb-2">Event Description &amp; Details</h2>
+        <div class="text-secondary lh-lg" style="white-space: pre-line;">{{ event.description }}</div>
+      </div>
+
+      {% if event.is_team_event %}
+      <div class="alert alert-info border-0 rounded-3 mb-4">
+        <h3 class="h6 fw-bold mb-1">👥 Team Event Guidelines</h3>
+        <p class="small mb-0">
+          This event requires a team of <strong>{{ event.min_team_size }} to {{ event.max_team_size }} members</strong>. The student registering serves as the Team Leader. You can add teammates from any department during the registration step.
+        </p>
+      </div>
+      {% endif %}
+
+      <!-- Action Section -->
+      <div class="pt-3 border-top">
+        {% if session.get('role') == 'student' %}
+          {% if registration %}
+            <div class="alert alert-success d-flex flex-wrap justify-content-between align-items-center rounded-3 p-3 mb-0">
+              <div>
+                <strong>&check; You are registered for this event!</strong>
+                <div class="small text-muted">Ticket Code: <code>{{ registration.ticket_code }}</code> · Status: {{ registration.status }}</div>
+              </div>
+              <div class="mt-2 mt-md-0 d-flex gap-2">
+                <a href="{{ url_for('view_ticket', registration_id=registration.id) }}" class="btn btn-success fw-semibold">
+                  🎟️ View Entry Pass
+                </a>
+                {% if registration.event.fee > 0 and registration.payment_status != 'Paid' %}
+                  <a href="{{ url_for('payment', registration_id=registration.id) }}" class="btn btn-warning fw-semibold">
+                    Pay Now
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+          {% else %}
+            {% if event.seats_left <= 0 %}
+              <div class="alert alert-warning mb-0">This event has reached full capacity.</div>
+            {% else %}
+              <div class="d-flex flex-wrap gap-3 align-items-center">
+                <a href="{{ url_for('register_event', event_id=event.id) }}" class="btn btn-primary btn-lg fw-semibold px-4 shadow-sm">
+                  Register for this Event &rarr;
+                </a>
+                <span class="text-secondary small">
+                  Open for all departments · Free instant digital ticket pass
+                </span>
+              </div>
+            {% endif %}
+          {% endif %}
+        {% elif not session.get('user_id') %}
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <a class="btn btn-primary btn-lg" href="{{ url_for('student_login') }}">Student Login to Register</a>
+            <a class="btn btn-outline-secondary btn-lg" href="{{ url_for('student_register') }}">Create Account</a>
+          </div>
+        {% else %}
+          <div class="alert alert-secondary mb-0">
+            You are logged in as an administrator. <a href="{{ url_for('admin_event_form', event_id=event.id) }}" class="fw-bold">Edit this event in Admin Panel</a>.
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

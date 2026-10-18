@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if event else 'Add New' }} Event · Admin Portal{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 900px;">
+  <div class="mb-3">
+    <a href="{{ url_for('admin_events') }}" class="text-decoration-none text-secondary">
+      &larr; Back to Events Management
+    </a>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-white">
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+      <div>
+        <h1 class="h3 fw-bold text-dark mb-1">{{ 'Edit' if event else 'Add New' }} Campus Event</h1>
+        <p class="text-secondary small mb-0">
+          Any department can arrange events. All students across all college departments can register!
+        </p>
+      </div>
+      <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill">
+        Admin Console
+      </span>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+      <div class="row g-3">
+        <!-- Event Title -->
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Event Title *</label>
+          <input class="form-control" name="title" required value="{{ event.title if event else '' }}" placeholder="e.g. HackSphere 2026: 36Hr AI Hackathon">
+        </div>
+
+        <!-- Category -->
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Event Category *</label>
+          <select class="form-select" name="category" required>
+            {% for c in categories %}
+              <option value="{{ c }}" {{ 'selected' if event and event.category == c }}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Organizing Department -->
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Arranging Department *</label>
+          <select class="form-select" name="department" required>
+            {% for d in departments %}
+              <option value="{{ d }}" {{ 'selected' if event and event.department == d }}>{{ d }}</option>
+            {% endfor %}
+          </select>
+          <div class="form-text small">Department organizing this event.</div>
+        </div>
+
+        <!-- Participation Format -->
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Participation Format *</label>
+          <select class="form-select" name="event_type" id="eventTypeSelect" required>
+            <option value="Individual" {{ 'selected' if event and event.event_type == 'Individual' }}>👤 Solo / Individual</option>
+            <option value="Team" {{ 'selected' if event and event.event_type == 'Team' }}>👥 Team Event</option>
+          </select>
+          <div class="form-text small">Solo or multi-member team.</div>
+        </div>
+
+        <!-- Team size limits (visible when Team is chosen) -->
+        <div class="col-md-2" id="minTeamGroup">
+          <label class="form-label fw-semibold">Min Team</label>
+          <input class="form-control" type="number" name="min_team_size" min="1" max="20" value="{{ event.min_team_size if event else 2 }}">
+        </div>
+        <div class="col-md-2" id="maxTeamGroup">
+          <label class="form-label fw-semibold">Max Team</label>
+          <input class="form-control" type="number" name="max_team_size" min="1" max="20" value="{{ event.max_team_size if event else 4 }}">
+        </div>
+
+        <!-- Date & Time -->
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Event Date *</label>
+          <input class="form-control" type="date" name="event_date" required value="{{ event.event_date if event else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Event Time</label>
+          <input class="form-control" name="event_time" placeholder="e.g. 10:00 AM - 04:00 PM" value="{{ event.event_time if event else '' }}">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Registration Deadline</label>
+          <input class="form-control" type="date" name="deadline" value="{{ event.deadline if event else '' }}">
+        </div>
+
+        <!-- Venue -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold">Venue / Location *</label>
+          <input class="form-control" name="venue" required placeholder="e.g. Central Auditorium / Computing Lab 2" value="{{ event.venue if event else '' }}">
+        </div>
+
+        <!-- Fee & Capacity -->
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Fee (₹) <small class="text-muted">(0 for Free)</small></label>
+          <input class="form-control" type="number" min="0" step="1" name="fee" value="{{ event.fee if event else 0 }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-semibold">Maximum Capacity</label>
+          <input class="form-control" type="number" min="1" name="capacity" value="{{ event.capacity if event else 100 }}">
+        </div>
+
+        <!-- Poster Upload & Status -->
+        <div class="col-md-8">
+          <label class="form-label fw-semibold">Event Poster Image (Optional)</label>
+          <input class="form-control" type="file" name="poster" accept=".png,.jpg,.jpeg,.webp">
+          {% if event and event.poster %}
+            <div class="form-text">Current poster: {{ event.poster }}</div>
+          {% endif %}
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">Publication Status</label>
+          <select class="form-select" name="status">
+            {% for s in ['Published', 'Draft', 'Cancelled'] %}
+              <option value="{{ s }}" {{ 'selected' if (event and event.status == s) or (not event and s == 'Published') }}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Description -->
+        <div class="col-12">
+          <label class="form-label fw-semibold">Description, Schedule, Rules &amp; Prizes</label>
+          <textarea class="form-control" rows="5" name="description" placeholder="Provide full event overview, rules, guidelines, eligibility notes, cash prizes, and contact details...">{{ event.description if event else '' }}</textarea>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2 mt-4 pt-3 border-top">
+        <button class="btn btn-primary px-4 fw-semibold" type="submit">
+          Save &amp; Publish Event
+        </button>
+        <a class="btn btn-outline-secondary" href="{{ url_for('admin_events') }}">
+          Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const typeSelect = document.getElementById('eventTypeSelect');
+    const minGroup = document.getElementById('minTeamGroup');
+    const maxGroup = document.getElementById('maxTeamGroup');
+
+    function toggleTeamFields() {
+      if (typeSelect.value === 'Team') {
+        minGroup.style.display = 'block';
+        maxGroup.style.display = 'block';
+      } else {
+        minGroup.style.display = 'none';
+        maxGroup.style.display = 'none';
+      }
+    }
+
+    typeSelect.addEventListener('change', toggleTeamFields);
+    toggleTeamFields();
+  })();
+</script>
+{% endblock %}
